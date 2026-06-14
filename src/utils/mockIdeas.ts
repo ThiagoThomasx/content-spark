@@ -1,0 +1,58 @@
+import type { Idea } from '../types/idea';
+
+const now = new Date();
+const isoDaysAgo = (days: number) => new Date(now.getTime() - days * 86400000).toISOString();
+
+export const mockIdeas: Idea[] = [
+  {
+    id: crypto.randomUUID(),
+    title: 'Como transformar insights soltos em posts consistentes',
+    rawIdea: 'Mostrar um processo simples para capturar pensamentos do dia e converter em um post com tese, exemplo e chamada para conversa.',
+    type: 'Post',
+    channel: 'LinkedIn',
+    audience: 'Criadores independentes e fundadores que querem publicar com mais frequencia.',
+    hook: 'A maioria das ideias boas morre porque vira anotacao, nao briefing.',
+    promise: 'Um fluxo de 10 minutos para sair da ideia solta para um post publicavel.',
+    notes: 'Usar exemplo real de nota no celular. Fechar com checklist.',
+    status: 'Pronto para produzir',
+    priority: 'Alta',
+    tags: ['processo', 'criacao', 'linkedin'],
+    favorite: true,
+    createdAt: isoDaysAgo(1),
+    updatedAt: isoDaysAgo(0),
+  },
+  {
+    id: crypto.randomUUID(),
+    title: 'Review: ferramentas que realmente ajudam na pre-producao',
+    rawIdea: 'Comparar ferramentas pessoais de captura e organizacao sem transformar em lista generica de apps.',
+    type: 'Review',
+    channel: 'YouTube',
+    audience: 'Pessoas que produzem conteudo e querem menos atrito antes de gravar.',
+    hook: 'O melhor app de conteudo e aquele que reduz a decisao seguinte.',
+    promise: 'Separar ferramentas bonitas de ferramentas uteis para execucao.',
+    notes: 'Criar roteiro com criterios: velocidade, contexto, exportacao e manutencao.',
+    status: 'Rascunho',
+    priority: 'Media',
+    tags: ['review', 'produtividade', 'youtube'],
+    favorite: false,
+    createdAt: isoDaysAgo(3),
+    updatedAt: isoDaysAgo(2),
+  },
+  {
+    id: crypto.randomUUID(),
+    title: 'Thread sobre transformar uma ideia de produto em conteudo',
+    rawIdea: 'Explicar como uma hipotese de produto tambem pode virar uma serie de conteudos de validacao.',
+    type: 'Thread',
+    channel: 'X/Twitter',
+    audience: 'Builders, PMs e pessoas criando produtos pequenos.',
+    hook: 'Antes de construir uma feature, tente escrever o post que venderia a ideia.',
+    promise: 'Um metodo para validar clareza antes de gastar energia construindo.',
+    notes: 'Dividir em 7 tweets. Incluir pergunta final.',
+    status: 'Ideia',
+    priority: 'Baixa',
+    tags: ['produto', 'validacao', 'thread'],
+    favorite: true,
+    createdAt: isoDaysAgo(6),
+    updatedAt: isoDaysAgo(5),
+  },
+];
