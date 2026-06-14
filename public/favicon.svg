@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Content Spark">
+  <rect width="64" height="64" rx="14" fill="#0a0f1a"/>
+  <path d="M32 8l5.7 16.3L55 30l-17.3 5.7L32 56l-5.7-20.3L9 30l17.3-5.7L32 8z" fill="#f97316"/>
+  <path d="M32 20l2.8 8.1L43 31l-8.2 2.9L32 44l-2.8-10.1L21 31l8.2-2.9L32 20z" fill="#fff7ed"/>
+  <circle cx="48" cy="16" r="3" fill="#34d399"/>
+</svg>
