@@ -20,6 +20,7 @@ import {
   Archive,
   RefreshCw,
   ShieldCheck,
+  TrendingUp,
 } from 'lucide-react';
 import { EmptyState } from './components/EmptyState';
 import { FiltersBar } from './components/FiltersBar';
@@ -192,7 +193,6 @@ function App() {
   function handleStatusChange(id: string, status: IdeaStatus) {
     updateStatus(id, status);
     showToast(`Status atualizado para ${status}.`);
-    // Keep productionIdea in sync
     if (productionIdea?.id === id) {
       setProductionIdea((prev) => prev ? { ...prev, status } : null);
     }
@@ -201,7 +201,6 @@ function App() {
   function handleKeepIdea(id: string) {
     const idea = ideas.find((i) => i.id === id);
     if (!idea) return;
-    // Re-save with current content to bump updatedAt
     const { id: _id, createdAt: _c, updatedAt: _u, ...input } = idea;
     updateIdea(id, input as IdeaInput);
   }
@@ -217,24 +216,26 @@ function App() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-20 border-b border-line/80 bg-ink/88 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-          <button type="button" className="flex w-fit items-center gap-3 text-left" onClick={() => setView('dashboard')}>
-            <span className="grid h-11 w-11 place-items-center rounded-lg bg-ember text-white shadow-lg shadow-orange-950/40">
-              <Sparkles size={24} />
+      <header className="sticky top-0 z-20 border-b border-line/60 bg-ink/90 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <button type="button" className="flex items-center gap-2.5 text-left" onClick={() => setView('dashboard')}>
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ember text-white shadow-md shadow-orange-950/40">
+              <Sparkles size={20} />
             </span>
-            <span>
-              <span className="block text-xl font-bold text-white">Content Spark</span>
-              <span className="block text-sm text-slate-400">Ideias brutas em briefings, conteúdos e projetos</span>
+            <span className="hidden sm:block">
+              <span className="block text-base font-bold leading-tight text-white">Content Spark</span>
+              <span className="block text-xs text-slate-500">Ideias em briefings e conteúdos</span>
             </span>
+            <span className="text-base font-bold text-white sm:hidden">Content Spark</span>
           </button>
 
-          <nav className="flex flex-wrap gap-2">
+          <nav className="flex items-center gap-1.5">
             <NavButton active={view === 'dashboard'} icon={LayoutDashboard} label="Dashboard" onClick={() => setView('dashboard')} />
             <NavButton active={view === 'library'} icon={Library} label="Biblioteca" onClick={() => setView('library')} />
             <NavButton active={view === 'pipeline'} icon={Columns3} label="Pipeline" onClick={() => setView('pipeline')} />
-            <button type="button" className="btn btn-primary" onClick={() => setView('new')}>
-              <Plus size={18} /> Nova ideia
+            <button type="button" className="btn btn-primary ml-1" onClick={() => setView('new')}>
+              <Plus size={16} />
+              <span className="hidden sm:inline">Nova ideia</span>
             </button>
           </nav>
         </div>
@@ -287,7 +288,7 @@ function App() {
 
         {view === 'new' ? (
           <section>
-            <PageTitle title="Nova ideia" description="Capture o material bruto e já deixe a pauta pronta para evoluir." />
+            <PageTitle title="Nova ideia" description="Capture o material bruto e deixe a pauta pronta para evoluir." />
             <IdeaForm onSubmit={handleCreate} submitLabel="Criar ideia" />
           </section>
         ) : null}
@@ -307,7 +308,11 @@ function App() {
       </main>
 
       {toast ? (
-        <div className="fixed bottom-4 left-1/2 z-30 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-lg border border-emerald-400/30 bg-slate-950 px-4 py-3 text-sm font-semibold text-emerald-100 shadow-glow">
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-lg border border-emerald-500/30 bg-slate-950 px-4 py-3 text-sm font-medium text-emerald-200 shadow-2xl"
+        >
           {toast}
         </div>
       ) : null}
@@ -346,6 +351,8 @@ function App() {
   );
 }
 
+/* ─── Dashboard ─────────────────────────────────────────────────── */
+
 function Dashboard({
   stats,
   ideas,
@@ -378,35 +385,35 @@ function Dashboard({
   const health = getBacklogHealth(ideas);
 
   return (
-    <section className="grid gap-5">
-      {/* Quick Capture */}
+    <section className="grid gap-6">
+      {/* 1. Quick Capture — primary action */}
       <QuickCapture onCapture={onQuickCapture} onCreate={onCreate} />
 
-      {/* Action metrics */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={BookOpen} label="Total de ideias" value={stats.total} />
-        <StatCard icon={Flame} label="Prontas para produzir" value={stats.ready} highlight />
-        <StatCard icon={Clock3} label="Ideias paradas" value={stats.stale} />
+      {/* 2. Compact stats row */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard icon={BookOpen} label="Total" value={stats.total} />
+        <StatCard icon={Flame} label="Prontas" value={stats.ready} highlight />
+        <StatCard icon={Clock3} label="Paradas" value={stats.stale} />
         <StatCard icon={Star} label="Favoritas" value={stats.favorites} />
       </div>
 
-      {/* Backlog Health */}
+      {/* 3. Backlog health + review */}
       {ideas.length ? (
         <BacklogHealthCard health={health} reviewCount={reviewCount} onOpenReview={onOpenReview} />
       ) : null}
 
-      {/* Pipeline summary */}
+      {/* 4. Pipeline distribution */}
       {ideas.length ? <PipelineSummary ideas={ideas} /> : null}
 
-      {/* Action Queue + Stalled Ideas */}
+      {/* 5. Action Queue + Stalled (side by side on large screens) */}
       {ideas.length ? (
-        <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
+        <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
           <DashboardPanel
             title="Para produzir agora"
-            description="Favoritas, prioridade alta, score 19+ ou com próxima ação definida."
+            description="Favoritas, alta prioridade, score 19+ ou com próxima ação definida."
           >
             {actionQueue.length ? (
-              <div className="grid gap-3">
+              <div className="grid gap-2.5">
                 {actionQueue.map((idea) => (
                   <ActionQueueItem
                     key={idea.id}
@@ -419,16 +426,17 @@ function Dashboard({
               </div>
             ) : (
               <EmptyState
+                compact
                 icon={Flame}
                 title="Nada urgente na mesa."
-                description="Marque uma ideia como pronta, favorita ou adicione uma próxima ação para ela aparecer aqui."
+                description="Marque uma ideia como pronta ou favorita para ela aparecer aqui."
               />
             )}
           </DashboardPanel>
 
-          <DashboardPanel title="Ideias paradas" description="Sem atualização há 7+ dias — revisite antes que percam contexto.">
+          <DashboardPanel title="Ideias paradas" description="Sem atualização há 7+ dias.">
             {staleIdeas.length ? (
-              <div className="grid gap-3">
+              <div className="grid gap-2.5">
                 {staleIdeas.slice(0, 4).map((idea) => (
                   <StaleItem
                     key={idea.id}
@@ -439,47 +447,68 @@ function Dashboard({
                   />
                 ))}
                 {staleIdeas.length > 4 && (
-                  <p className="text-xs text-slate-500 text-center">
+                  <p className="text-center text-xs text-slate-600">
                     +{staleIdeas.length - 4} mais na Biblioteca
                   </p>
                 )}
               </div>
             ) : (
               <EmptyState
+                compact
                 icon={CheckCircle2}
-                title="Nenhuma ideia encalhada."
-                description="Seu backlog recente está saudável."
+                title="Backlog saudável."
+                description="Nenhuma ideia encalhada no momento."
               />
             )}
           </DashboardPanel>
         </div>
       ) : null}
 
-      {/* Top potencial */}
+      {/* 6. Top potential */}
       {ideas.length ? (
-        <DashboardPanel title="Top ideias por potencial" description="Ideias ativas com maior score — priorize a próxima produção.">
+        <DashboardPanel title="Top potencial" description="Ideias ativas com maior score — priorize a próxima produção.">
           {topPotentialIdeas.length ? (
-            <div className="grid gap-3">
+            <div className="grid gap-2.5">
               {topPotentialIdeas.map((idea) => (
                 <TopPotentialItem key={idea.id} idea={idea} onOpen={onOpen} onCopy={onCopy} />
               ))}
             </div>
           ) : (
             <EmptyState
-              icon={Flame}
-              title="Nenhuma ideia ativa para ranquear"
-              description="Crie ou desarquive ideias para montar seu ranking de potencial."
+              compact
+              icon={TrendingUp}
+              title="Nenhuma ideia para ranquear."
+              description="Crie ou desarquive ideias para ver o ranking de potencial."
             />
           )}
         </DashboardPanel>
+      ) : null}
+
+      {/* Empty dashboard — no ideas yet */}
+      {!ideas.length ? (
+        <div className="surface rounded-xl px-6 py-14 text-center">
+          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full border border-ember/30 bg-ember/10">
+            <Sparkles size={28} className="text-ember" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Capture sua primeira ideia</h2>
+          <p className="mx-auto mt-2 max-w-xs text-sm text-slate-400">
+            Use a captura rápida acima ou crie uma ideia completa para começar.
+          </p>
+          <button type="button" className="btn btn-primary mt-6" onClick={onCreate}>
+            <Plus size={18} /> Criar ideia completa
+          </button>
+        </div>
       ) : null}
     </section>
   );
 }
 
+/* ─── Quick Capture ─────────────────────────────────────────────── */
+
 function QuickCapture({ onCapture, onCreate }: { onCapture: (rawIdea: string, ideaType: IdeaType) => void; onCreate: () => void }) {
   const [text, setText] = useState('');
   const [ideaType, setIdeaType] = useState<IdeaType>('Conteúdo');
+  const [saved, setSaved] = useState(false);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -487,43 +516,64 @@ function QuickCapture({ onCapture, onCreate }: { onCapture: (rawIdea: string, id
     if (!trimmed) return;
     onCapture(trimmed, ideaType);
     setText('');
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 1600);
   }
 
   return (
-    <div className="surface rounded-lg p-4 sm:p-5">
+    <div className="rounded-xl border border-line/60 bg-slate-950/60 p-5 shadow-glow backdrop-blur">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Zap size={16} className="text-ember" />
-          <span className="text-sm font-semibold text-slate-200">Captura rápida</span>
+          <span className="grid h-7 w-7 place-items-center rounded-md bg-ember/15 text-ember">
+            <Zap size={15} />
+          </span>
+          <span className="text-sm font-semibold text-white">Captura rápida</span>
         </div>
-        <button type="button" className="btn btn-ghost text-xs" onClick={onCreate}>
-          <FilePlus2 size={15} /> Ideia completa
+        <button type="button" className="btn btn-ghost px-2.5 text-xs text-slate-500" onClick={onCreate}>
+          <FilePlus2 size={14} /> Ideia completa
         </button>
       </div>
+
       <form onSubmit={handleSubmit} className="grid gap-3">
         <textarea
-          className="field min-h-[4.5rem] resize-none"
-          placeholder="O que surgiu na sua mente?"
+          className="field min-h-[5rem] resize-none text-base placeholder:text-slate-600"
+          placeholder="O que surgiu na sua cabeça agora?"
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={3}
+          aria-label="Texto da ideia"
         />
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <select
-            className="field sm:w-52"
+            className="field sm:w-48"
             value={ideaType}
             onChange={(e) => setIdeaType(e.target.value as IdeaType)}
+            aria-label="Tipo da ideia"
           >
             {ideaTypes.map((t) => <option key={t}>{t}</option>)}
           </select>
-          <button type="submit" className="btn btn-primary" disabled={!text.trim()}>
-            <FilePlus2 size={18} /> Salvar ideia
+          <button
+            type="submit"
+            className={`btn px-4 transition-all ${
+              saved
+                ? 'btn-secondary border-emerald-500/40 text-emerald-300'
+                : 'btn-primary'
+            }`}
+            disabled={!text.trim()}
+          >
+            {saved ? (
+              <><CheckCircle2 size={16} /> Salva!</>
+            ) : (
+              <><FilePlus2 size={16} /> Salvar ideia</>
+            )}
           </button>
         </div>
       </form>
     </div>
   );
 }
+
+/* ─── Pipeline Summary ──────────────────────────────────────────── */
 
 function PipelineSummary({ ideas }: { ideas: Idea[] }) {
   const counts = statuses.map((status) => ({
@@ -532,25 +582,29 @@ function PipelineSummary({ ideas }: { ideas: Idea[] }) {
   }));
 
   return (
-    <DashboardPanel title="Distribuição no pipeline" description="Volume de ideias por etapa de produção.">
-      <div className="grid gap-3 md:grid-cols-5">
+    <DashboardPanel title="Pipeline" description="Volume de ideias por etapa.">
+      <div className="flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-5 md:overflow-visible md:pb-0">
         {counts.map(({ status, count }) => (
           <div
             key={status}
-            className={`rounded-lg border p-3 ${
+            className={`min-w-[7rem] flex-1 shrink-0 rounded-lg border p-3 md:min-w-0 ${
               status === 'Pronto para produzir'
-                ? 'border-orange-300/50 bg-orange-500/15'
-                : 'border-line bg-slate-950/55'
+                ? 'border-orange-500/30 bg-orange-500/10'
+                : 'border-line/50 bg-slate-950/40'
             }`}
           >
             <Badge tone={statusTone(status)}>{status}</Badge>
-            <p className="mt-3 text-2xl font-bold text-white">{count}</p>
+            <p className={`mt-2.5 text-2xl font-bold ${status === 'Pronto para produzir' ? 'text-orange-200' : 'text-white'}`}>
+              {count}
+            </p>
           </div>
         ))}
       </div>
     </DashboardPanel>
   );
 }
+
+/* ─── Library View ──────────────────────────────────────────────── */
 
 function LibraryView({
   ideas,
@@ -577,7 +631,7 @@ function LibraryView({
 
   return (
     <section className="grid gap-5">
-      <PageTitle title="Biblioteca de ideias" description="Busque, filtre e abra qualquer ideia para editar ou copiar o briefing." />
+      <PageTitle title="Biblioteca" description="Busque, filtre e abra qualquer ideia para editar ou copiar o briefing." />
       <FiltersBar filters={filters} onChange={onFiltersChange} onClear={onClearFilters} />
       {ideas.length ? (
         <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
@@ -595,11 +649,11 @@ function LibraryView({
       ) : (
         <EmptyState
           icon={Library}
-          title={hasActiveFilters ? 'Nenhuma ideia bate com esses filtros' : 'Biblioteca pronta para receber ideias'}
+          title={hasActiveFilters ? 'Nenhuma ideia bate com esses filtros.' : 'Biblioteca vazia.'}
           description={
             hasActiveFilters
-              ? 'Tente ampliar a busca, remover algum filtro ou limpar tudo para reencontrar suas pautas.'
-              : 'Quando você criar ideias, elas aparecem aqui com atalhos para briefing, favorito e arquivamento.'
+              ? 'Tente ampliar a busca ou limpar os filtros.'
+              : 'Quando você criar ideias, elas aparecem aqui.'
           }
           action={
             hasActiveFilters ? (
@@ -614,12 +668,14 @@ function LibraryView({
   );
 }
 
+/* ─── Dashboard sub-components ──────────────────────────────────── */
+
 function DashboardPanel({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
-    <section className="surface rounded-lg p-4">
+    <section className="surface rounded-xl p-4">
       <div className="mb-4">
-        <h2 className="text-base font-semibold text-white">{title}</h2>
-        <p className="mt-1 text-sm text-slate-400">{description}</p>
+        <h2 className="panel-heading">{title}</h2>
+        <p className="panel-sub">{description}</p>
       </div>
       {children}
     </section>
@@ -640,45 +696,38 @@ function ActionQueueItem({
   const score = calculatePotentialScore(idea);
 
   return (
-    <article className="rounded-lg border border-line bg-slate-950/55 p-3">
+    <article className="dash-card">
       <div className="mb-2 flex min-w-0 items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="line-clamp-2 font-semibold text-white">{idea.title || 'Sem título'}</h3>
-        </div>
-        {idea.favorite && <Star size={14} className="shrink-0 fill-amber-400 text-amber-400 mt-0.5" />}
+        <h3 className="line-clamp-2 text-sm font-semibold text-white leading-snug">{idea.title || 'Sem título'}</h3>
+        {idea.favorite && <Star size={13} className="mt-0.5 shrink-0 fill-amber-400 text-amber-400" />}
       </div>
 
-      <div className="mb-2 flex flex-wrap items-center gap-1.5">
+      <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
         <Badge tone={ideaTypeTone(idea.ideaType ?? 'Outro')}>{idea.ideaType ?? 'Outro'}</Badge>
         <Badge tone={statusTone(idea.status)}>{idea.status}</Badge>
-        <Badge tone={priorityTone(idea.priority)}>{idea.priority}</Badge>
-        <PotentialScore idea={idea} compact />
         {score >= 19 && (
           <span className="text-xs font-semibold text-ember">{score}/25</span>
+        )}
+        {idea.priority === 'Alta' && (
+          <Badge tone={priorityTone(idea.priority)}>{idea.priority}</Badge>
         )}
       </div>
 
       {idea.nextAction && (
-        <p className="mb-2 truncate text-xs text-slate-400">
-          <span className="font-medium text-slate-300">Próxima:</span> {idea.nextAction}
+        <p className="mb-2 truncate text-xs text-slate-500">
+          <span className="text-slate-400">→</span> {idea.nextAction}
         </p>
       )}
 
-      {idea.updatedAt && (
-        <p className="mb-2 text-xs text-slate-500 flex items-center gap-1">
-          <Clock3 size={11} /> {formatDate(idea.updatedAt)}
-        </p>
-      )}
-
-      <div className="flex flex-wrap gap-2 pt-1">
+      <div className="flex flex-wrap gap-1.5 pt-0.5">
         <button type="button" className="btn btn-ghost px-2.5 text-xs" onClick={() => onOpen(idea.id)}>
-          <ArrowRight size={14} /> Abrir
+          <ArrowRight size={13} /> Abrir
         </button>
         <button type="button" className="btn btn-secondary px-2.5 text-xs" onClick={() => onCopy(idea)}>
-          <Copy size={14} /> Copiar briefing
+          <Copy size={13} /> Briefing
         </button>
         <button type="button" className="btn btn-primary px-2.5 text-xs" onClick={() => onProduce(idea)}>
-          <Play size={14} /> Produzir agora
+          <Play size={13} /> Produzir
         </button>
       </div>
     </article>
@@ -689,23 +738,23 @@ function TopPotentialItem({ idea, onOpen, onCopy }: { idea: Idea; onOpen: (id: s
   const details = getPotentialScoreDetails(idea);
 
   return (
-    <article className="rounded-lg border border-line bg-slate-950/55 p-3">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <article className="dash-card">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h3 className="line-clamp-2 font-semibold text-white">{idea.title || 'Sem título'}</h3>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+          <h3 className="line-clamp-1 text-sm font-semibold text-white">{idea.title || 'Sem título'}</h3>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <Badge tone="channel">{idea.channel}</Badge>
             <Badge tone="type">{idea.type}</Badge>
             <PotentialScore idea={idea} compact />
-            <span className="text-xs font-semibold text-slate-400">{details.classification}</span>
+            <span className="text-xs text-slate-500">{details.classification}</span>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex">
-          <button type="button" className="btn btn-secondary px-2.5" onClick={() => onOpen(idea.id)}>
-            <ArrowRight size={16} /> Abrir
+        <div className="flex shrink-0 gap-1.5">
+          <button type="button" className="btn btn-ghost px-2.5 text-xs" onClick={() => onOpen(idea.id)}>
+            <ArrowRight size={13} /> Abrir
           </button>
-          <button type="button" className="btn btn-primary px-2.5" onClick={() => onCopy(idea)}>
-            <Copy size={16} /> Copiar
+          <button type="button" className="btn btn-secondary px-2.5 text-xs" onClick={() => onCopy(idea)}>
+            <Copy size={13} /> Briefing
           </button>
         </div>
       </div>
@@ -725,26 +774,26 @@ function StaleItem({
   onArchive: (id: string) => void;
 }) {
   return (
-    <article className="rounded-lg border border-line bg-slate-950/55 p-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <article className="dash-card">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="line-clamp-2 font-semibold text-white">{idea.title || 'Sem título'}</h3>
-          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          <h3 className="line-clamp-1 text-sm font-semibold text-white">{idea.title || 'Sem título'}</h3>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <Badge tone={statusTone(idea.status)}>{idea.status}</Badge>
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">
-              <AlertCircle size={11} /> {reason}
+            <span className="meta rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 font-medium text-amber-400">
+              <AlertCircle size={10} /> {reason}
             </span>
           </div>
-          <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
-            <Clock3 size={11} /> {formatDate(idea.updatedAt ?? idea.createdAt)}
+          <p className="meta mt-1.5">
+            <Clock3 size={10} /> {formatDate(idea.updatedAt ?? idea.createdAt)}
           </p>
         </div>
-        <div className="flex shrink-0 gap-2">
-          <button type="button" className="btn btn-secondary px-2.5 text-xs" onClick={() => onOpen(idea.id)}>
-            <ArrowRight size={14} /> Abrir
+        <div className="flex shrink-0 gap-1.5">
+          <button type="button" className="btn btn-ghost px-2.5 text-xs" onClick={() => onOpen(idea.id)}>
+            <ArrowRight size={13} />
           </button>
-          <button type="button" className="btn btn-ghost px-2.5 text-xs text-slate-500" onClick={() => onArchive(idea.id)}>
-            <Archive size={13} /> Arquivar
+          <button type="button" className="btn btn-ghost px-2.5 text-xs text-slate-600 hover:text-slate-400" onClick={() => onArchive(idea.id)}>
+            <Archive size={13} />
           </button>
         </div>
       </div>
@@ -752,23 +801,25 @@ function StaleItem({
   );
 }
 
+/* ─── Shared UI atoms ────────────────────────────────────────────── */
+
 function PageTitle({ title, description }: { title: string; description: string }) {
   return (
-    <div className="mb-5">
+    <div className="mb-4">
       <h1 className="text-2xl font-bold text-white sm:text-3xl">{title}</h1>
-      <p className="mt-2 text-sm leading-6 text-slate-400">{description}</p>
+      <p className="mt-1.5 text-sm text-slate-400">{description}</p>
     </div>
   );
 }
 
 function StatCard({ icon: Icon, label, value, highlight = false }: { icon: ElementType; label: string; value: number; highlight?: boolean }) {
   return (
-    <div className={`surface rounded-lg p-4 ${highlight && value > 0 ? 'border-ember/40' : ''}`}>
-      <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-slate-900 ${highlight ? 'text-ember' : 'text-slate-400'}`}>
-        <Icon size={20} />
+    <div className={`surface rounded-xl p-4 ${highlight && value > 0 ? 'border-ember/30' : ''}`}>
+      <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-lg border border-line/60 bg-slate-900 ${highlight ? 'text-ember' : 'text-slate-500'}`}>
+        <Icon size={18} />
       </div>
-      <p className="text-3xl font-bold text-white">{value}</p>
-      <p className="mt-1 text-sm text-slate-400">{label}</p>
+      <p className="text-2xl font-bold text-white">{value}</p>
+      <p className="mt-0.5 text-xs text-slate-500">{label}</p>
     </div>
   );
 }
@@ -797,31 +848,27 @@ function BacklogHealthCard({
         : 'border-red-500/20';
 
   return (
-    <div className={`surface rounded-lg border ${borderColor} p-4`}>
+    <div className={`surface rounded-xl border ${borderColor} p-4`}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-line bg-slate-900">
-            <ShieldCheck size={20} className={color} />
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-line/60 bg-slate-900">
+            <ShieldCheck size={18} className={color} />
           </div>
           <div>
             <p className="text-sm font-semibold text-white">Saúde do backlog</p>
-            <p className={`text-xs font-medium ${color}`}>{label}</p>
+            <p className={`text-xs ${color}`}>{label}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="text-right">
             <p className={`text-2xl font-bold ${color}`}>{health}%</p>
-            <p className="text-xs text-slate-400">
-              {reviewCount > 0 ? `${reviewCount} precisam de revisão` : 'Nenhuma ideia precisa de revisão'}
+            <p className="text-xs text-slate-500">
+              {reviewCount > 0 ? `${reviewCount} precisam de revisão` : 'Nenhuma para revisar'}
             </p>
           </div>
-          <button
-            type="button"
-            className="btn btn-secondary shrink-0 text-xs"
-            onClick={onOpenReview}
-          >
-            <RefreshCw size={14} /> Revisar ideias
+          <button type="button" className="btn btn-secondary shrink-0 text-xs" onClick={onOpenReview}>
+            <RefreshCw size={13} /> Revisar
           </button>
         </div>
       </div>
@@ -831,8 +878,14 @@ function BacklogHealthCard({
 
 function NavButton({ active, icon: Icon, label, onClick }: { active: boolean; icon: ElementType; label: string; onClick: () => void }) {
   return (
-    <button type="button" className={`btn ${active ? 'btn-secondary border-ember/70 text-orange-100' : 'btn-ghost'}`} onClick={onClick}>
-      <Icon size={18} /> {label}
+    <button
+      type="button"
+      className={`btn text-xs sm:text-sm ${active ? 'btn-secondary border-ember/50 text-orange-100' : 'btn-ghost'}`}
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+    >
+      <Icon size={16} />
+      <span className="hidden sm:inline">{label}</span>
     </button>
   );
 }

@@ -1,8 +1,8 @@
-import { Archive, Calendar, Copy, ExternalLink, Star } from 'lucide-react';
+import { Archive, Copy, ExternalLink, Star } from 'lucide-react';
 import { Badge } from './Badge';
 import type { Idea } from '../types/idea';
 import { PotentialScore } from './PotentialScore';
-import { ideaTypeTone, priorityTone, statusTone } from '../utils/badges';
+import { ideaTypeTone, statusTone } from '../utils/badges';
 import { formatDate } from '../utils/date';
 
 type IdeaCardProps = {
@@ -16,67 +16,79 @@ type IdeaCardProps = {
 
 export function IdeaCard({ idea, onOpen, onCopy, onToggleFavorite, onArchive, compact = false }: IdeaCardProps) {
   return (
-    <article className="surface group flex h-full w-full flex-col rounded-lg p-4 text-left transition hover:-translate-y-0.5 hover:border-ember/70">
+    <article className="surface group flex h-full w-full flex-col rounded-lg p-4 text-left transition hover:-translate-y-0.5 hover:border-slate-600/80">
+      {/* Title row */}
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="line-clamp-2 text-base font-semibold leading-6 text-white group-hover:text-orange-100">
-            {idea.title || 'Sem titulo'}
-          </h3>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Badge tone={ideaTypeTone(idea.ideaType)}>{idea.ideaType}</Badge>
-            <Badge tone="type">{idea.type}</Badge>
-            <Badge tone="channel">{idea.channel}</Badge>
-            <Badge tone={statusTone(idea.status)}>{idea.status}</Badge>
-            <Badge tone={priorityTone(idea.priority)}>{idea.priority}</Badge>
-            <PotentialScore idea={idea} compact />
-          </div>
-        </div>
-        {idea.favorite ? <Star className="shrink-0 fill-amber-300 text-amber-300" size={20} /> : null}
+        <h3
+          className="line-clamp-2 text-base font-semibold leading-snug text-white group-hover:text-orange-100 cursor-pointer"
+          onClick={() => onOpen(idea.id)}
+        >
+          {idea.title || 'Sem título'}
+        </h3>
+        {idea.favorite ? <Star className="mt-0.5 shrink-0 fill-amber-300 text-amber-300" size={16} /> : null}
       </div>
 
-      {!compact ? (
-        <>
-          <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-400">{idea.rawIdea || 'Sem ideia bruta registrada.'}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {idea.tags.length ? idea.tags.map((tag) => <Badge key={tag} tone="muted">#{tag}</Badge>) : <Badge tone="muted">sem tags</Badge>}
-          </div>
-        </>
+      {/* Primary badges — only most relevant */}
+      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+        <Badge tone={ideaTypeTone(idea.ideaType)}>{idea.ideaType}</Badge>
+        <Badge tone={statusTone(idea.status)}>{idea.status}</Badge>
+        <PotentialScore idea={idea} compact />
+      </div>
+
+      {/* Raw idea preview */}
+      {!compact && idea.rawIdea ? (
+        <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-500">{idea.rawIdea}</p>
       ) : null}
 
-      <div className="mt-4 grid gap-1 border-t border-line pt-3 text-xs text-slate-500 sm:grid-cols-2">
-        <span className="inline-flex items-center gap-1.5">
-          <Calendar size={14} /> Criada: {formatDate(idea.createdAt)}
-        </span>
-        <span className="inline-flex items-center gap-1.5 sm:justify-end">
-          Atualizada: {formatDate(idea.updatedAt)}
-        </span>
-      </div>
+      {/* Secondary meta */}
+      <div className="mt-auto">
+        <div className="mt-3 flex items-center justify-between gap-2 border-t border-line/60 pt-2.5 text-xs text-slate-600">
+          <span className="truncate">{idea.channel} · {idea.type}</span>
+          <span className="shrink-0">{formatDate(idea.updatedAt)}</span>
+        </div>
 
-      <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-3">
-        <button type="button" className="btn btn-secondary px-2.5" onClick={() => onOpen(idea.id)} title="Abrir ideia">
-          <ExternalLink size={16} /> Abrir
-        </button>
-        {onCopy ? (
-          <button type="button" className="btn btn-secondary px-2.5" onClick={() => onCopy(idea)} title="Copiar briefing">
-            <Copy size={16} /> Copiar
-          </button>
-        ) : null}
-        {onToggleFavorite ? (
-          <button type="button" className="btn btn-secondary px-2.5" onClick={() => onToggleFavorite(idea.id)} title={idea.favorite ? 'Desfavoritar' : 'Favoritar'}>
-            <Star size={16} className={idea.favorite ? 'fill-amber-300 text-amber-300' : ''} /> {idea.favorite ? 'Salvo' : 'Favorito'}
-          </button>
-        ) : null}
-        {onArchive ? (
+        {/* Actions */}
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
           <button
             type="button"
-            className="btn btn-secondary px-2.5"
-            onClick={() => onArchive(idea.id)}
-            disabled={idea.status === 'Arquivado'}
-            title="Arquivar ideia"
+            className="btn btn-secondary px-2.5 text-xs"
+            onClick={() => onOpen(idea.id)}
+            title="Abrir ideia"
           >
-            <Archive size={16} /> Arquivar
+            <ExternalLink size={14} /> Abrir
           </button>
-        ) : null}
+          {onCopy ? (
+            <button
+              type="button"
+              className="btn btn-ghost px-2.5 text-xs"
+              onClick={() => onCopy(idea)}
+              title="Copiar briefing"
+            >
+              <Copy size={14} /> Briefing
+            </button>
+          ) : null}
+          {onToggleFavorite ? (
+            <button
+              type="button"
+              className="btn btn-ghost px-2.5 text-xs"
+              onClick={() => onToggleFavorite(idea.id)}
+              title={idea.favorite ? 'Desfavoritar' : 'Favoritar'}
+            >
+              <Star size={14} className={idea.favorite ? 'fill-amber-300 text-amber-300' : ''} />
+            </button>
+          ) : null}
+          {onArchive ? (
+            <button
+              type="button"
+              className="btn btn-ghost px-2.5 text-xs text-slate-600 hover:text-slate-300"
+              onClick={() => onArchive(idea.id)}
+              disabled={idea.status === 'Arquivado'}
+              title="Arquivar ideia"
+            >
+              <Archive size={14} />
+            </button>
+          ) : null}
+        </div>
       </div>
     </article>
   );
