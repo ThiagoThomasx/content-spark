@@ -1,4 +1,5 @@
 import type { Idea } from '../types/idea';
+import { calculatePotentialScore, classifyPotentialScore } from './score';
 
 export type OutputFormat =
   | 'briefingCompleto'
@@ -68,35 +69,51 @@ function normalizeIdea(idea: Idea): IdeaText {
 
 function briefingCompleto(idea: Idea) {
   const text = normalizeIdea(idea);
+  const score = calculatePotentialScore(idea);
+  const scoreLabel = classifyPotentialScore(score);
+
+  const optional = (label: string, value: string | undefined) => {
+    const v = value?.trim();
+    return v ? `\n## ${label}\n${v}` : '';
+  };
 
   return `# ${text.title}
 
-## Ideia central
-${text.rawIdea}
-
-## Tipo de conteudo
-${text.type}
-
-## Canal
-${text.channel}
-
-## Publico-alvo
-${text.audience}
-
-## Gancho
-${text.hook}
-
-## Promessa
-${text.promise}
-
-## Notas de desenvolvimento
-${text.notes}
-
-## Tags
-${text.tags}
+## Tipo
+${idea.ideaType}
 
 ## Status
 ${text.status}
+
+## Ideia bruta
+${text.rawIdea}
+
+## Público / Usuário
+${text.audience}
+
+## Promessa / Valor
+${text.promise}${optional('Ângulo principal', idea.angle)}
+
+## Gancho
+${text.hook}${optional('Pontos-chave', idea.keyPoints)}
+
+## Formato
+${text.type}
+
+## Canal
+${text.channel}${optional('Referências', idea.references)}
+
+## Plano de execução
+- Próxima ação: ${idea.nextAction?.trim() || '—'}
+- Prioridade: ${idea.priority}
+- Esforço: ${idea.effort || '—'}
+- Prazo: ${idea.dueDate || '—'}${idea.checklist?.trim() ? `\n\n${idea.checklist.trim()}` : ''}
+
+## Score
+${score}/25 — ${scoreLabel}
+
+## Notas
+${text.notes}
 `;
 }
 

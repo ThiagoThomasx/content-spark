@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { ElementType, FormEvent, ReactNode } from 'react';
 import {
-  Archive,
   ArrowRight,
   BookOpen,
   CheckCircle2,
@@ -15,15 +14,13 @@ import {
   Plus,
   Sparkles,
   Star,
-  Trash2,
-  Undo2,
   Zap,
 } from 'lucide-react';
 import { EmptyState } from './components/EmptyState';
 import { FiltersBar } from './components/FiltersBar';
 import { IdeaCard } from './components/IdeaCard';
+import { IdeaDetail } from './components/IdeaDetail';
 import { IdeaForm } from './components/IdeaForm';
-import { OutputFormatsPanel } from './components/OutputFormatsPanel';
 import { defaultPipelineFilters, PipelineView, type PipelineFilters } from './components/PipelineView';
 import { PotentialScore } from './components/PotentialScore';
 import { useIdeas } from './hooks/useIdeas';
@@ -31,7 +28,7 @@ import { ideaTypes, statuses, type Filters, type Idea, type IdeaInput, type Idea
 import { generateBriefing } from './utils/briefing';
 import { copyText } from './utils/clipboard';
 import { formatDate } from './utils/date';
-import { ideaTypeTone, priorityTone, statusTone } from './utils/badges';
+import { priorityTone, statusTone } from './utils/badges';
 import { getExecutionIdeas, getStaleIdeas, isFilteringActive } from './utils/ideaSelectors';
 import { Badge } from './components/Badge';
 import { calculatePotentialScore, compareByPriority, getPotentialScoreDetails, getTopPotentialIdeas } from './utils/score';
@@ -55,7 +52,6 @@ function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [pipelineFilters, setPipelineFilters] = useState<PipelineFilters>(defaultPipelineFilters);
-  const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
   const [toast, setToast] = useState<string | null>(null);
 
   const selectedIdea = ideas.find((idea) => idea.id === selectedId) ?? null;
@@ -112,7 +108,6 @@ function App() {
 
   function openIdea(id: string) {
     setSelectedId(id);
-    setCopyState('idle');
     setView('detail');
   }
 
@@ -151,7 +146,6 @@ function App() {
   function handleUpdate(input: IdeaInput) {
     if (!selectedIdea) return;
     updateIdea(selectedIdea.id, input);
-    setCopyState('idle');
     showToast('Alterações salvas.');
   }
 
@@ -187,9 +181,7 @@ function App() {
   async function handleCopy(idea: Idea) {
     try {
       await copyText(generateBriefing(idea));
-      setCopyState('copied');
       showToast('Briefing copiado para a área de transferência.');
-      window.setTimeout(() => setCopyState('idle'), 1800);
     } catch {
       showToast('Não consegui copiar automaticamente. Abra a ideia e tente novamente.', 2600);
     }
@@ -269,34 +261,16 @@ function App() {
         ) : null}
 
         {view === 'detail' && selectedIdea ? (
-          <section>
-            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-              <div>
-                <button type="button" className="btn btn-ghost mb-3" onClick={() => setView('library')}>
-                  <Undo2 size={17} /> Voltar para biblioteca
-                </button>
-                <PageTitle title={selectedIdea.title || 'Ideia sem título'} description={`Criada em ${formatDate(selectedIdea.createdAt)} · Atualizada em ${formatDate(selectedIdea.updatedAt)}`} />
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <Badge tone={ideaTypeTone(selectedIdea.ideaType)}>{selectedIdea.ideaType}</Badge>
-                  <PotentialScore idea={selectedIdea} />
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button type="button" className="btn btn-secondary" onClick={() => handleToggleFavorite(selectedIdea.id)}>
-                  <Star size={18} className={selectedIdea.favorite ? 'fill-amber-300 text-amber-300' : ''} />
-                  {selectedIdea.favorite ? 'Desfavoritar' : 'Favoritar'}
-                </button>
-                <button type="button" className="btn btn-secondary" onClick={() => handleCopy(selectedIdea)}>
-                  <Copy size={18} /> {copyState === 'copied' ? 'Briefing copiado' : 'Copiar briefing'}
-                </button>
-                <button type="button" className="btn border border-rose-500/40 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20" onClick={() => handleDelete(selectedIdea)}>
-                  <Trash2 size={18} /> Excluir
-                </button>
-              </div>
-            </div>
-            <IdeaForm idea={selectedIdea} onSubmit={handleUpdate} submitLabel="Salvar alterações" />
-            <OutputFormatsPanel idea={selectedIdea} />
-          </section>
+          <IdeaDetail
+            key={selectedIdea.id}
+            idea={selectedIdea}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+            onArchive={handleArchive}
+            onToggleFavorite={handleToggleFavorite}
+            onBack={() => setView('library')}
+            onShowToast={showToast}
+          />
         ) : null}
       </main>
 

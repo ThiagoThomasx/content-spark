@@ -4,11 +4,11 @@ export const DEFAULT_CRITERIA_VALUE = 3;
 export const SCORE_MAX = 25;
 
 export const potentialCriteriaLabels: Array<{ key: keyof PotentialCriteria; label: string }> = [
-  { key: 'expectedImpact', label: 'Impacto esperado' },
-  { key: 'executionEase', label: 'Facilidade de execucao' },
-  { key: 'ideaClarity', label: 'Clareza da ideia' },
-  { key: 'reusePotential', label: 'Potencial de reaproveitamento' },
-  { key: 'urgency', label: 'Urgencia' },
+  { key: 'ideaClarity', label: 'Clareza' },
+  { key: 'expectedImpact', label: 'Impacto' },
+  { key: 'executionEase', label: 'Facilidade' },
+  { key: 'reusePotential', label: 'Reaproveitamento' },
+  { key: 'urgency', label: 'Urgência' },
 ];
 
 const priorityRank: Record<Priority, number> = {
@@ -39,10 +39,9 @@ export function calculatePotentialScore(idea: PotentialCriteria) {
 }
 
 export function classifyPotentialScore(score: number) {
-  if (score >= 21) return 'Prioridade maxima';
-  if (score >= 16) return 'Boa aposta';
-  if (score >= 11) return 'Media prioridade';
-  return 'Baixa prioridade';
+  if (score >= 19) return 'Alto potencial';
+  if (score >= 11) return 'Potencial médio';
+  return 'Baixo potencial';
 }
 
 export function getPotentialScoreDetails(idea: PotentialCriteria) {
