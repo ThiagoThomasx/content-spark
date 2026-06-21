@@ -24,6 +24,7 @@ import { formatDate } from '../utils/date';
 import { classifyPotentialScore, calculatePotentialScore, potentialCriteriaLabels } from '../utils/score';
 import { copyText } from '../utils/clipboard';
 import { generateBriefing } from '../utils/briefing';
+import { briefingFieldConfigs } from '../utils/briefingTemplates';
 
 type FormState = {
   title: string;
@@ -170,6 +171,7 @@ export function IdeaDetail({
   const scoreLabel = classifyPotentialScore(score);
 
   const previewIdea: Idea = { ...idea, ...formStateToIdeaInput(form) };
+  const fieldConfig = briefingFieldConfigs[form.ideaType];
 
   return (
     <section className="grid gap-5">
@@ -269,50 +271,54 @@ export function IdeaDetail({
       </SectionCard>
 
       {/* Briefing estruturado */}
-      <SectionCard title="Briefing estruturado" helper="Desenvolva a ideia em componentes acionáveis.">
+      <SectionCard
+        title="Briefing estruturado"
+        helper="Desenvolva a ideia em componentes acionáveis."
+        badge={fieldConfig.templateBadge}
+      >
         <label className="grid gap-2">
-          <span className="label">Público / Usuário</span>
+          <span className="label">{fieldConfig.audienceLabel}</span>
           <input
             className="field"
             value={form.audience}
             onChange={(e) => set('audience', e.target.value)}
-            placeholder="Para quem isso existe?"
+            placeholder={fieldConfig.audiencePlaceholder}
           />
         </label>
         <label className="grid gap-2">
-          <span className="label">Ângulo principal</span>
+          <span className="label">{fieldConfig.angleLabel}</span>
           <input
             className="field"
             value={form.angle}
             onChange={(e) => set('angle', e.target.value)}
-            placeholder="O diferencial ou perspectiva única"
+            placeholder={fieldConfig.anglePlaceholder}
           />
         </label>
         <label className="grid gap-2">
-          <span className="label">Promessa / Valor</span>
+          <span className="label">{fieldConfig.promiseLabel}</span>
           <input
             className="field"
             value={form.promise}
             onChange={(e) => set('promise', e.target.value)}
-            placeholder="O que a pessoa leva depois de consumir?"
+            placeholder={fieldConfig.promisePlaceholder}
           />
         </label>
         <label className="grid gap-2">
-          <span className="label">Gancho</span>
+          <span className="label">{fieldConfig.hookLabel}</span>
           <input
             className="field"
             value={form.hook}
             onChange={(e) => set('hook', e.target.value)}
-            placeholder="A primeira frase que puxa atenção"
+            placeholder={fieldConfig.hookPlaceholder}
           />
         </label>
         <label className="grid gap-2 lg:col-span-2">
-          <span className="label">Pontos-chave</span>
+          <span className="label">{fieldConfig.keyPointsLabel}</span>
           <textarea
             className="field min-h-24 resize-y"
             value={form.keyPoints}
             onChange={(e) => set('keyPoints', e.target.value)}
-            placeholder="Os principais pontos que a ideia deve cobrir"
+            placeholder={fieldConfig.keyPointsPlaceholder}
           />
         </label>
         <SelectControl
@@ -328,7 +334,7 @@ export function IdeaDetail({
           onChange={(v) => set('channel', v as Channel)}
         />
         <label className="grid gap-2 lg:col-span-2">
-          <span className="label">Referências</span>
+          <span className="label">{fieldConfig.referencesLabel}</span>
           <textarea
             className="field min-h-20 resize-y"
             value={form.references}
@@ -446,12 +452,19 @@ export function IdeaDetail({
   );
 }
 
-function SectionCard({ title, helper, children }: { title: string; helper: string; children: ReactNode }) {
+function SectionCard({ title, helper, badge, children }: { title: string; helper: string; badge?: string; children: ReactNode }) {
   return (
     <div className="surface rounded-lg p-4 sm:p-6">
-      <div className="mb-4">
-        <h2 className="text-base font-semibold text-white">{title}</h2>
-        <p className="mt-1 text-sm text-slate-400">{helper}</p>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h2 className="text-base font-semibold text-white">{title}</h2>
+          <p className="mt-1 text-sm text-slate-400">{helper}</p>
+        </div>
+        {badge && (
+          <span className="inline-flex items-center rounded-md border border-orange-500/30 bg-orange-500/10 px-2 py-1 text-xs font-medium text-orange-300">
+            {badge}
+          </span>
+        )}
       </div>
       <div className="grid gap-4 lg:grid-cols-2">{children}</div>
     </div>

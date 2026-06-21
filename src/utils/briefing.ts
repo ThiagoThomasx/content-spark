@@ -1,6 +1,6 @@
 import type { Idea } from '../types/idea';
-import { generateOutput } from './outputTemplates';
+import { generateBriefingByType } from './briefingTemplates';
 
 export function generateBriefing(idea: Idea) {
-  return generateOutput(idea, 'briefingCompleto');
+  return generateBriefingByType(idea);
 }
