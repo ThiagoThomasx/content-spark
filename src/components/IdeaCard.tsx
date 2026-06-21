@@ -2,7 +2,7 @@ import { Archive, Calendar, Copy, ExternalLink, Star } from 'lucide-react';
 import { Badge } from './Badge';
 import type { Idea } from '../types/idea';
 import { PotentialScore } from './PotentialScore';
-import { priorityTone, statusTone } from '../utils/badges';
+import { ideaTypeTone, priorityTone, statusTone } from '../utils/badges';
 import { formatDate } from '../utils/date';
 
 type IdeaCardProps = {
@@ -23,6 +23,7 @@ export function IdeaCard({ idea, onOpen, onCopy, onToggleFavorite, onArchive, co
             {idea.title || 'Sem titulo'}
           </h3>
           <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Badge tone={ideaTypeTone(idea.ideaType)}>{idea.ideaType}</Badge>
             <Badge tone="type">{idea.type}</Badge>
             <Badge tone="channel">{idea.channel}</Badge>
             <Badge tone={statusTone(idea.status)}>{idea.status}</Badge>

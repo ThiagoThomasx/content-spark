@@ -1,9 +1,11 @@
+export const ideaTypes = ['Conteúdo', 'Projeto', 'Feature', 'Campanha', 'Estudo', 'Produto', 'Pessoal', 'Outro'] as const;
 export const contentTypes = ['Post', 'Video', 'Thread', 'Review', 'Roteiro', 'Produto', 'Outro'] as const;
 export const channels = ['LinkedIn', 'TikTok', 'YouTube', 'X/Twitter', 'Blog', 'Letterboxd', 'Instagram', 'Outro'] as const;
 export const statuses = ['Ideia', 'Rascunho', 'Pronto para produzir', 'Publicado', 'Arquivado'] as const;
 export const priorities = ['Baixa', 'Media', 'Alta'] as const;
 export const sortOptions = ['Mais recentes', 'Maior score', 'Menor score', 'Maior prioridade', 'Data de atualizacao'] as const;
 
+export type IdeaType = (typeof ideaTypes)[number];
 export type ContentType = (typeof contentTypes)[number];
 export type Channel = (typeof channels)[number];
 export type IdeaStatus = (typeof statuses)[number];
@@ -22,6 +24,7 @@ export type Idea = PotentialCriteria & {
   id: string;
   title: string;
   rawIdea: string;
+  ideaType: IdeaType;
   type: ContentType;
   channel: Channel;
   audience: string;
@@ -43,6 +46,7 @@ export type Filters = {
   status: 'Todos' | IdeaStatus;
   channel: 'Todos' | Channel;
   type: 'Todos' | ContentType;
+  ideaType: 'Todos' | IdeaType;
   priority: 'Todas' | Priority;
   sortBy: SortOption;
   favoritesOnly: boolean;

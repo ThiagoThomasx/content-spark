@@ -1,5 +1,5 @@
 import { RotateCcw, Search, Star } from 'lucide-react';
-import { channels, contentTypes, priorities, sortOptions, statuses, type Filters } from '../types/idea';
+import { channels, contentTypes, ideaTypes, priorities, sortOptions, statuses, type Filters } from '../types/idea';
 
 type FiltersBarProps = {
   filters: Filters;
@@ -10,7 +10,7 @@ type FiltersBarProps = {
 export function FiltersBar({ filters, onChange, onClear }: FiltersBarProps) {
   return (
     <div className="surface rounded-lg p-4">
-      <div className="grid gap-3 lg:grid-cols-[1.4fr_repeat(5,1fr)_auto_auto]">
+      <div className="grid gap-3 lg:grid-cols-[1.4fr_repeat(6,1fr)_auto_auto]">
         <label className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
           <input
@@ -23,6 +23,10 @@ export function FiltersBar({ filters, onChange, onClear }: FiltersBarProps) {
         <select className="field" value={filters.status} onChange={(event) => onChange({ ...filters, status: event.target.value as Filters['status'] })}>
           <option>Todos</option>
           {statuses.map((status) => <option key={status}>{status}</option>)}
+        </select>
+        <select className="field" value={filters.ideaType} onChange={(event) => onChange({ ...filters, ideaType: event.target.value as Filters['ideaType'] })}>
+          <option>Todos</option>
+          {ideaTypes.map((t) => <option key={t}>{t}</option>)}
         </select>
         <select className="field" value={filters.channel} onChange={(event) => onChange({ ...filters, channel: event.target.value as Filters['channel'] })}>
           <option>Todos</option>

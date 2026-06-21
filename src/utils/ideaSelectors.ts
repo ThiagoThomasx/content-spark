@@ -29,6 +29,7 @@ export function isFilteringActive(filters: {
   status: string;
   channel: string;
   type: string;
+  ideaType?: string;
   priority: string;
   favoritesOnly: boolean;
 }) {
@@ -37,6 +38,7 @@ export function isFilteringActive(filters: {
     filters.status !== 'Todos' ||
     filters.channel !== 'Todos' ||
     filters.type !== 'Todos' ||
+    (filters.ideaType != null && filters.ideaType !== 'Todos') ||
     filters.priority !== 'Todas' ||
     filters.favoritesOnly
   );

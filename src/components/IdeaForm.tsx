@@ -1,11 +1,12 @@
 import { Save, Star } from 'lucide-react';
 import type { FormEvent } from 'react';
-import { channels, contentTypes, priorities, statuses, type Idea, type IdeaInput } from '../types/idea';
+import { channels, contentTypes, ideaTypes, priorities, statuses, type Idea, type IdeaInput } from '../types/idea';
 import { getPotentialCriteria, potentialCriteriaLabels } from '../utils/score';
 
 const emptyIdea: IdeaInput = {
   title: '',
   rawIdea: '',
+  ideaType: 'Conteúdo',
   type: 'Post',
   channel: 'LinkedIn',
   audience: '',
@@ -49,6 +50,7 @@ export function IdeaForm({ idea, onSubmit, submitLabel }: IdeaFormProps) {
     onSubmit({
       title: String(data.get('title') ?? '').trim(),
       rawIdea: String(data.get('rawIdea') ?? '').trim(),
+      ideaType: String(data.get('ideaType')) as IdeaInput['ideaType'],
       type: String(data.get('type')) as IdeaInput['type'],
       channel: String(data.get('channel')) as IdeaInput['channel'],
       audience: String(data.get('audience') ?? '').trim(),
@@ -80,7 +82,8 @@ export function IdeaForm({ idea, onSubmit, submitLabel }: IdeaFormProps) {
           <textarea className="field min-h-32 resize-y" name="rawIdea" defaultValue={initial.rawIdea} placeholder="Cole aqui o pensamento cru, insight, referencia ou tese inicial." required />
         </label>
 
-        <SelectField name="type" label="Tipo de conteudo" value={initial.type} options={contentTypes} />
+        <SelectField name="ideaType" label="Categoria da ideia" value={initial.ideaType} options={ideaTypes} />
+        <SelectField name="type" label="Formato de conteudo" value={initial.type} options={contentTypes} />
         <SelectField name="channel" label="Canal" value={initial.channel} options={channels} />
 
         <label className="grid gap-2">

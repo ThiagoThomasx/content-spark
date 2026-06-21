@@ -3,14 +3,27 @@ import type { ReactNode } from 'react';
 import { Badge } from './Badge';
 import { EmptyState } from './EmptyState';
 import { PotentialScore } from './PotentialScore';
-import { channels, contentTypes, priorities, statuses, type Channel, type ContentType, type Idea, type IdeaStatus, type Priority } from '../types/idea';
-import { priorityTone, statusTone } from '../utils/badges';
+import {
+  channels,
+  contentTypes,
+  ideaTypes,
+  priorities,
+  statuses,
+  type Channel,
+  type ContentType,
+  type Idea,
+  type IdeaStatus,
+  type IdeaType,
+  type Priority,
+} from '../types/idea';
+import { ideaTypeTone, priorityTone, statusTone } from '../utils/badges';
 import { formatDate } from '../utils/date';
 
 type PipelineFilters = {
   query: string;
   channel: 'Todos' | Channel;
   type: 'Todos' | ContentType;
+  ideaType: 'Todos' | IdeaType;
   priority: 'Todas' | Priority;
   favoritesOnly: boolean;
 };
@@ -19,14 +32,15 @@ const defaultPipelineFilters: PipelineFilters = {
   query: '',
   channel: 'Todos',
   type: 'Todos',
+  ideaType: 'Todos',
   priority: 'Todas',
   favoritesOnly: false,
 };
 
 const emptyMessages: Record<IdeaStatus, string> = {
-  Ideia: 'Capture algo novo para começar.',
+  Ideia: 'Nenhuma ideia aqui ainda.',
   Rascunho: 'Nada em desenvolvimento ainda.',
-  'Pronto para produzir': 'Nenhuma ideia pronta por enquanto.',
+  'Pronto para produzir': 'Mova ideias para cá quando estiverem prontas.',
   Publicado: 'Quando publicar, mova para cá.',
   Arquivado: 'Ideias fora do foco ficam guardadas aqui.',
 };
@@ -89,7 +103,7 @@ export function PipelineView({
                     />
                   ))
                 ) : (
-                  <EmptyState icon={Archive} title="Coluna vazia" description={emptyMessages[status]} />
+                  <EmptyState icon={Archive} title="Coluna vazia" description={emptyMessages[status]} compact />
                 )}
               </PipelineColumn>
             );
@@ -111,7 +125,7 @@ function PipelineFiltersBar({
 }) {
   return (
     <div className="surface rounded-lg p-4">
-      <div className="grid gap-3 lg:grid-cols-[1.5fr_repeat(3,1fr)_auto_auto]">
+      <div className="grid gap-3 lg:grid-cols-[1.5fr_repeat(4,1fr)_auto_auto]">
         <label className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
           <input
@@ -121,6 +135,10 @@ function PipelineFiltersBar({
             onChange={(event) => onChange({ ...filters, query: event.target.value })}
           />
         </label>
+        <select className="field" value={filters.ideaType} onChange={(event) => onChange({ ...filters, ideaType: event.target.value as PipelineFilters['ideaType'] })}>
+          <option>Todos</option>
+          {ideaTypes.map((t) => <option key={t}>{t}</option>)}
+        </select>
         <select className="field" value={filters.channel} onChange={(event) => onChange({ ...filters, channel: event.target.value as PipelineFilters['channel'] })}>
           <option>Todos</option>
           {channels.map((channel) => <option key={channel}>{channel}</option>)}
@@ -187,6 +205,7 @@ function PipelineCard({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Badge tone={ideaTypeTone(idea.ideaType)}>{idea.ideaType}</Badge>
         <Badge tone="channel">{idea.channel}</Badge>
         <Badge tone="type">{idea.type}</Badge>
         <Badge tone={priorityTone(idea.priority)}>{idea.priority}</Badge>
@@ -245,6 +264,7 @@ function filterPipelineIdeas(ideas: Idea[], filters: PipelineFilters) {
       (!query || searchable.includes(query)) &&
       (filters.channel === 'Todos' || idea.channel === filters.channel) &&
       (filters.type === 'Todos' || idea.type === filters.type) &&
+      (filters.ideaType === 'Todos' || idea.ideaType === filters.ideaType) &&
       (filters.priority === 'Todas' || idea.priority === filters.priority) &&
       (!filters.favoritesOnly || idea.favorite)
     );

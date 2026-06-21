@@ -1,5 +1,5 @@
 import type { BadgeTone } from '../components/Badge';
-import type { IdeaStatus, Priority } from '../types/idea';
+import type { IdeaStatus, IdeaType, Priority } from '../types/idea';
 
 export function statusTone(status: IdeaStatus): BadgeTone {
   const tones: Record<IdeaStatus, BadgeTone> = {
@@ -19,4 +19,8 @@ export function priorityTone(priority: Priority): BadgeTone {
     Alta: 'high',
   };
   return tones[priority];
+}
+
+export function ideaTypeTone(_ideaType: IdeaType): BadgeTone {
+  return 'category';
 }

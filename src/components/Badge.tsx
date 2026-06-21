@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
 
-export type BadgeTone = 'type' | 'channel' | 'idea' | 'draft' | 'ready' | 'published' | 'archived' | 'low' | 'medium' | 'high' | 'muted';
+export type BadgeTone = 'type' | 'channel' | 'category' | 'idea' | 'draft' | 'ready' | 'published' | 'archived' | 'low' | 'medium' | 'high' | 'muted';
 
 const tones: Record<BadgeTone, string> = {
   type: 'border-cyan-300/25 bg-cyan-300/10 text-cyan-100',
   channel: 'border-violet-300/25 bg-violet-300/10 text-violet-100',
+  category: 'border-fuchsia-300/25 bg-fuchsia-300/10 text-fuchsia-100',
   idea: 'border-sky-300/25 bg-sky-300/10 text-sky-100',
   draft: 'border-amber-300/30 bg-amber-300/10 text-amber-100',
   ready: 'border-orange-300/35 bg-orange-400/15 text-orange-100',
