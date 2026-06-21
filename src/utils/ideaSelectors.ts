@@ -74,6 +74,7 @@ export function isFilteringActive(filters: {
   ideaType?: string;
   priority: string;
   favoritesOnly: boolean;
+  needsReviewOnly?: boolean;
 }) {
   return (
     Boolean(filters.query.trim()) ||
@@ -82,6 +83,7 @@ export function isFilteringActive(filters: {
     filters.type !== 'Todos' ||
     (filters.ideaType != null && filters.ideaType !== 'Todos') ||
     filters.priority !== 'Todas' ||
-    filters.favoritesOnly
+    filters.favoritesOnly ||
+    Boolean(filters.needsReviewOnly)
   );
 }

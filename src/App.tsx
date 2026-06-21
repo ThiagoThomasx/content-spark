@@ -18,6 +18,8 @@ import {
   Zap,
   Play,
   Archive,
+  RefreshCw,
+  ShieldCheck,
 } from 'lucide-react';
 import { EmptyState } from './components/EmptyState';
 import { FiltersBar } from './components/FiltersBar';
@@ -27,6 +29,7 @@ import { IdeaForm } from './components/IdeaForm';
 import { defaultPipelineFilters, PipelineView, type PipelineFilters } from './components/PipelineView';
 import { PotentialScore } from './components/PotentialScore';
 import { ProductionMode } from './components/ProductionMode';
+import { ReviewMode } from './components/ReviewMode';
 import { useIdeas } from './hooks/useIdeas';
 import { ideaTypes, statuses, type Filters, type Idea, type IdeaInput, type IdeaStatus, type IdeaType } from './types/idea';
 import { generateBriefing } from './utils/briefing';
@@ -34,6 +37,7 @@ import { copyText } from './utils/clipboard';
 import { formatDate } from './utils/date';
 import { priorityTone, statusTone, ideaTypeTone } from './utils/badges';
 import { getActionQueueIdeas, getStaleIdeas, getStalledReason, isFilteringActive, type StalledReason } from './utils/ideaSelectors';
+import { getBacklogHealth, getBacklogHealthLabel, getIdeasNeedingReview, needsReview } from './utils/reviewQueue';
 import { Badge } from './components/Badge';
 import { calculatePotentialScore, compareByPriority, getPotentialScoreDetails, getTopPotentialIdeas } from './utils/score';
 
@@ -48,6 +52,7 @@ const defaultFilters: Filters = {
   priority: 'Todas',
   sortBy: 'Mais recentes',
   favoritesOnly: false,
+  needsReviewOnly: false,
 };
 
 function App() {
@@ -58,6 +63,7 @@ function App() {
   const [pipelineFilters, setPipelineFilters] = useState<PipelineFilters>(defaultPipelineFilters);
   const [toast, setToast] = useState<string | null>(null);
   const [productionIdea, setProductionIdea] = useState<Idea | null>(null);
+  const [reviewModeOpen, setReviewModeOpen] = useState(false);
 
   const selectedIdea = ideas.find((idea) => idea.id === selectedId) ?? null;
 
@@ -91,7 +97,8 @@ function App() {
         (filters.type === 'Todos' || idea.type === filters.type) &&
         (filters.ideaType === 'Todos' || idea.ideaType === filters.ideaType) &&
         (filters.priority === 'Todas' || idea.priority === filters.priority) &&
-        (!filters.favoritesOnly || idea.favorite)
+        (!filters.favoritesOnly || idea.favorite) &&
+        (!filters.needsReviewOnly || needsReview(idea))
       );
     });
 
@@ -191,6 +198,14 @@ function App() {
     }
   }
 
+  function handleKeepIdea(id: string) {
+    const idea = ideas.find((i) => i.id === id);
+    if (!idea) return;
+    // Re-save with current content to bump updatedAt
+    const { id: _id, createdAt: _c, updatedAt: _u, ...input } = idea;
+    updateIdea(id, input as IdeaInput);
+  }
+
   async function handleCopy(idea: Idea) {
     try {
       await copyText(generateBriefing(idea));
@@ -238,6 +253,7 @@ function App() {
             onProduce={openProduction}
             onArchive={handleArchive}
             onStatusChange={handleStatusChange}
+            onOpenReview={() => setReviewModeOpen(true)}
           />
         ) : null}
 
@@ -309,6 +325,23 @@ function App() {
           onShowToast={showToast}
         />
       ) : null}
+
+      {reviewModeOpen ? (
+        <ReviewMode
+          ideas={ideas}
+          onClose={() => setReviewModeOpen(false)}
+          onKeep={handleKeepIdea}
+          onImprove={(id) => {
+            setReviewModeOpen(false);
+            openIdea(id);
+          }}
+          onProduce={(idea) => {
+            setReviewModeOpen(false);
+            openProduction(idea);
+          }}
+          onArchive={handleArchive}
+        />
+      ) : null}
     </div>
   );
 }
@@ -324,6 +357,7 @@ function Dashboard({
   onProduce,
   onArchive,
   onStatusChange,
+  onOpenReview,
 }: {
   stats: Record<string, number>;
   ideas: Idea[];
@@ -335,10 +369,13 @@ function Dashboard({
   onProduce: (idea: Idea) => void;
   onArchive: (id: string) => void;
   onStatusChange: (id: string, status: IdeaStatus) => void;
+  onOpenReview: () => void;
 }) {
   const actionQueue = getActionQueueIdeas(ideas);
   const staleIdeas = getStaleIdeas(ideas);
   const topPotentialIdeas = getTopPotentialIdeas(ideas);
+  const reviewCount = getIdeasNeedingReview(ideas).length;
+  const health = getBacklogHealth(ideas);
 
   return (
     <section className="grid gap-5">
@@ -352,6 +389,11 @@ function Dashboard({
         <StatCard icon={Clock3} label="Ideias paradas" value={stats.stale} />
         <StatCard icon={Star} label="Favoritas" value={stats.favorites} />
       </div>
+
+      {/* Backlog Health */}
+      {ideas.length ? (
+        <BacklogHealthCard health={health} reviewCount={reviewCount} onOpenReview={onOpenReview} />
+      ) : null}
 
       {/* Pipeline summary */}
       {ideas.length ? <PipelineSummary ideas={ideas} /> : null}
@@ -727,6 +769,62 @@ function StatCard({ icon: Icon, label, value, highlight = false }: { icon: Eleme
       </div>
       <p className="text-3xl font-bold text-white">{value}</p>
       <p className="mt-1 text-sm text-slate-400">{label}</p>
+    </div>
+  );
+}
+
+function BacklogHealthCard({
+  health,
+  reviewCount,
+  onOpenReview,
+}: {
+  health: number;
+  reviewCount: number;
+  onOpenReview: () => void;
+}) {
+  const label = getBacklogHealthLabel(health);
+  const color =
+    health >= 80
+      ? 'text-emerald-400'
+      : health >= 60
+        ? 'text-amber-400'
+        : 'text-red-400';
+  const borderColor =
+    health >= 80
+      ? 'border-emerald-500/20'
+      : health >= 60
+        ? 'border-amber-500/20'
+        : 'border-red-500/20';
+
+  return (
+    <div className={`surface rounded-lg border ${borderColor} p-4`}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-line bg-slate-900">
+            <ShieldCheck size={20} className={color} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">Saúde do backlog</p>
+            <p className={`text-xs font-medium ${color}`}>{label}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <p className={`text-2xl font-bold ${color}`}>{health}%</p>
+            <p className="text-xs text-slate-400">
+              {reviewCount > 0 ? `${reviewCount} precisam de revisão` : 'Nenhuma ideia precisa de revisão'}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-secondary shrink-0 text-xs"
+            onClick={onOpenReview}
+          >
+            <RefreshCw size={14} /> Revisar ideias
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

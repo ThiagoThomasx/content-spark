@@ -62,4 +62,5 @@ export type Filters = {
   priority: 'Todas' | Priority;
   sortBy: SortOption;
   favoritesOnly: boolean;
+  needsReviewOnly?: boolean;
 };

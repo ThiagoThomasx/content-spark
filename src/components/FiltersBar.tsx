@@ -1,4 +1,4 @@
-import { RotateCcw, Search, Star } from 'lucide-react';
+import { AlertCircle, RotateCcw, Search, Star } from 'lucide-react';
 import { channels, contentTypes, ideaTypes, priorities, sortOptions, statuses, type Filters } from '../types/idea';
 
 type FiltersBarProps = {
@@ -10,7 +10,7 @@ type FiltersBarProps = {
 export function FiltersBar({ filters, onChange, onClear }: FiltersBarProps) {
   return (
     <div className="surface rounded-lg p-4">
-      <div className="grid gap-3 lg:grid-cols-[1.4fr_repeat(6,1fr)_auto_auto]">
+      <div className="grid gap-3 lg:grid-cols-[1.4fr_repeat(6,1fr)_auto_auto_auto]">
         <label className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
           <input
@@ -50,6 +50,14 @@ export function FiltersBar({ filters, onChange, onClear }: FiltersBarProps) {
           title="Filtrar favoritos"
         >
           <Star size={17} /> Favoritos
+        </button>
+        <button
+          type="button"
+          className={`btn ${filters.needsReviewOnly ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => onChange({ ...filters, needsReviewOnly: !filters.needsReviewOnly })}
+          title="Filtrar ideias que precisam de revisão"
+        >
+          <AlertCircle size={17} /> Revisão
         </button>
         <button type="button" className="btn btn-ghost" onClick={onClear} title="Limpar filtros">
           <RotateCcw size={17} /> Limpar
