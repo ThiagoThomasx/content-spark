@@ -1,0 +1,175 @@
+import { useState } from 'react';
+import { Archive, ArrowRight, Check, Copy, X } from 'lucide-react';
+import type { Idea, IdeaStatus } from '../types/idea';
+import { Badge } from './Badge';
+import { ideaTypeTone, statusTone } from '../utils/badges';
+import { calculatePotentialScore, classifyPotentialScore } from '../utils/score';
+import { generateBriefing } from '../utils/briefing';
+import { copyText } from '../utils/clipboard';
+import { formatDate } from '../utils/date';
+
+type ProductionModeProps = {
+  idea: Idea;
+  onClose: () => void;
+  onOpen: (id: string) => void;
+  onStatusChange: (id: string, status: IdeaStatus) => void;
+  onArchive: (id: string) => void;
+  onShowToast: (message: string) => void;
+};
+
+export function ProductionMode({ idea, onClose, onOpen, onStatusChange, onArchive, onShowToast }: ProductionModeProps) {
+  const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
+  const score = calculatePotentialScore(idea);
+  const scoreLabel = classifyPotentialScore(score);
+  const briefingText = generateBriefing(idea);
+
+  async function handleCopy() {
+    try {
+      await copyText(briefingText);
+      setCopyState('copied');
+      onShowToast('Briefing copiado.');
+      window.setTimeout(() => setCopyState('idle'), 2000);
+    } catch {
+      onShowToast('Não foi possível copiar. Tente novamente.');
+    }
+  }
+
+  function handleStatusChange(status: IdeaStatus) {
+    onStatusChange(idea.id, status);
+    onShowToast(`Status atualizado para ${status}.`);
+    if (status === 'Publicado' || status === 'Arquivado') onClose();
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Modo de produção: ${idea.title}`}
+        className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col overflow-hidden rounded-t-2xl bg-slate-900 shadow-2xl md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-2xl md:rounded-2xl"
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 border-b border-line px-4 py-4 sm:px-5">
+          <div className="min-w-0">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <Badge tone={ideaTypeTone(idea.ideaType ?? 'Outro')}>{idea.ideaType ?? 'Outro'}</Badge>
+              <Badge tone={statusTone(idea.status)}>{idea.status}</Badge>
+              <span className="text-xs font-bold text-ember">
+                {score}/25 · {scoreLabel}
+              </span>
+            </div>
+            <h2 className="text-lg font-bold leading-tight text-white">{idea.title || 'Sem título'}</h2>
+            {idea.updatedAt && (
+              <p className="mt-1 text-xs text-slate-500">Atualizado em {formatDate(idea.updatedAt)}</p>
+            )}
+          </div>
+          <button type="button" className="btn btn-ghost shrink-0 p-1.5" onClick={onClose}>
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+          <div className="grid gap-4">
+            {idea.nextAction && (
+              <div className="rounded-lg border border-orange-500/30 bg-orange-500/10 px-4 py-3">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-orange-300">Próxima ação</p>
+                <p className="text-sm text-white">{idea.nextAction}</p>
+              </div>
+            )}
+
+            {idea.rawIdea && (
+              <Section label="Ideia bruta">
+                <p className="text-sm whitespace-pre-wrap text-slate-300">{idea.rawIdea}</p>
+              </Section>
+            )}
+
+            {idea.keyPoints && (
+              <Section label="Pontos-chave">
+                <p className="text-sm whitespace-pre-wrap text-slate-300">{idea.keyPoints}</p>
+              </Section>
+            )}
+
+            {idea.checklist && (
+              <Section label="Checklist / Etapas">
+                <p className="text-sm whitespace-pre-wrap text-slate-300">{idea.checklist}</p>
+              </Section>
+            )}
+
+            {idea.notes && (
+              <Section label="Notas">
+                <p className="text-sm whitespace-pre-wrap text-slate-300">{idea.notes}</p>
+              </Section>
+            )}
+
+            <Section label="Briefing gerado">
+              <pre className="overflow-x-auto rounded-lg border border-line bg-slate-950/60 px-3 py-3 font-mono text-xs leading-relaxed text-slate-300 whitespace-pre-wrap">
+                {briefingText}
+              </pre>
+            </Section>
+          </div>
+        </div>
+
+        {/* Footer actions */}
+        <div className="border-t border-line px-4 py-3 sm:px-5">
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn btn-primary px-3" onClick={handleCopy}>
+              {copyState === 'copied' ? (
+                <>
+                  <Check size={16} /> Copiado
+                </>
+              ) : (
+                <>
+                  <Copy size={16} /> Copiar briefing
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary px-3"
+              onClick={() => {
+                onClose();
+                onOpen(idea.id);
+              }}
+            >
+              <ArrowRight size={16} /> Abrir detalhe
+            </button>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <StatusBtn label="Marcar Rascunho" onClick={() => handleStatusChange('Rascunho')} />
+            <StatusBtn label="Marcar Pronta" onClick={() => handleStatusChange('Pronto para produzir')} />
+            <StatusBtn label="Marcar Publicada" className="text-emerald-400" onClick={() => handleStatusChange('Publicado')} />
+            <button
+              type="button"
+              className="btn btn-ghost px-3 text-xs text-slate-500"
+              onClick={() => {
+                onArchive(idea.id);
+                onClose();
+              }}
+            >
+              <Archive size={13} /> Arquivar
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+      {children}
+    </div>
+  );
+}
+
+function StatusBtn({ label, onClick, className = '' }: { label: string; onClick: () => void; className?: string }) {
+  return (
+    <button type={`button`} className={`btn btn-ghost px-3 text-xs ${className}`} onClick={onClick}>
+      {label}
+    </button>
+  );
+}

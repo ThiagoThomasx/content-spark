@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { ElementType, FormEvent, ReactNode } from 'react';
 import {
+  AlertCircle,
   ArrowRight,
   BookOpen,
   CheckCircle2,
@@ -15,6 +16,8 @@ import {
   Sparkles,
   Star,
   Zap,
+  Play,
+  Archive,
 } from 'lucide-react';
 import { EmptyState } from './components/EmptyState';
 import { FiltersBar } from './components/FiltersBar';
@@ -23,13 +26,14 @@ import { IdeaDetail } from './components/IdeaDetail';
 import { IdeaForm } from './components/IdeaForm';
 import { defaultPipelineFilters, PipelineView, type PipelineFilters } from './components/PipelineView';
 import { PotentialScore } from './components/PotentialScore';
+import { ProductionMode } from './components/ProductionMode';
 import { useIdeas } from './hooks/useIdeas';
 import { ideaTypes, statuses, type Filters, type Idea, type IdeaInput, type IdeaStatus, type IdeaType } from './types/idea';
 import { generateBriefing } from './utils/briefing';
 import { copyText } from './utils/clipboard';
 import { formatDate } from './utils/date';
-import { priorityTone, statusTone } from './utils/badges';
-import { getExecutionIdeas, getStaleIdeas, isFilteringActive } from './utils/ideaSelectors';
+import { priorityTone, statusTone, ideaTypeTone } from './utils/badges';
+import { getActionQueueIdeas, getStaleIdeas, getStalledReason, isFilteringActive, type StalledReason } from './utils/ideaSelectors';
 import { Badge } from './components/Badge';
 import { calculatePotentialScore, compareByPriority, getPotentialScoreDetails, getTopPotentialIdeas } from './utils/score';
 
@@ -53,6 +57,7 @@ function App() {
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [pipelineFilters, setPipelineFilters] = useState<PipelineFilters>(defaultPipelineFilters);
   const [toast, setToast] = useState<string | null>(null);
+  const [productionIdea, setProductionIdea] = useState<Idea | null>(null);
 
   const selectedIdea = ideas.find((idea) => idea.id === selectedId) ?? null;
 
@@ -109,6 +114,10 @@ function App() {
   function openIdea(id: string) {
     setSelectedId(id);
     setView('detail');
+  }
+
+  function openProduction(idea: Idea) {
+    setProductionIdea(idea);
   }
 
   function handleCreate(input: IdeaInput) {
@@ -176,6 +185,10 @@ function App() {
   function handleStatusChange(id: string, status: IdeaStatus) {
     updateStatus(id, status);
     showToast(`Status atualizado para ${status}.`);
+    // Keep productionIdea in sync
+    if (productionIdea?.id === id) {
+      setProductionIdea((prev) => prev ? { ...prev, status } : null);
+    }
   }
 
   async function handleCopy(idea: Idea) {
@@ -222,6 +235,9 @@ function App() {
             onCopy={handleCopy}
             onMoveReady={handleMoveReady}
             onQuickCapture={handleQuickCapture}
+            onProduce={openProduction}
+            onArchive={handleArchive}
+            onStatusChange={handleStatusChange}
           />
         ) : null}
 
@@ -279,6 +295,20 @@ function App() {
           {toast}
         </div>
       ) : null}
+
+      {productionIdea ? (
+        <ProductionMode
+          idea={productionIdea}
+          onClose={() => setProductionIdea(null)}
+          onOpen={(id) => {
+            setProductionIdea(null);
+            openIdea(id);
+          }}
+          onStatusChange={handleStatusChange}
+          onArchive={handleArchive}
+          onShowToast={showToast}
+        />
+      ) : null}
     </div>
   );
 }
@@ -291,6 +321,9 @@ function Dashboard({
   onCopy,
   onMoveReady,
   onQuickCapture,
+  onProduce,
+  onArchive,
+  onStatusChange,
 }: {
   stats: Record<string, number>;
   ideas: Idea[];
@@ -299,8 +332,11 @@ function Dashboard({
   onCopy: (idea: Idea) => void;
   onMoveReady: (id: string) => void;
   onQuickCapture: (rawIdea: string, ideaType: IdeaType) => void;
+  onProduce: (idea: Idea) => void;
+  onArchive: (id: string) => void;
+  onStatusChange: (id: string, status: IdeaStatus) => void;
 }) {
-  const executionIdeas = getExecutionIdeas(ideas);
+  const actionQueue = getActionQueueIdeas(ideas);
   const staleIdeas = getStaleIdeas(ideas);
   const topPotentialIdeas = getTopPotentialIdeas(ideas);
 
@@ -320,37 +356,57 @@ function Dashboard({
       {/* Pipeline summary */}
       {ideas.length ? <PipelineSummary ideas={ideas} /> : null}
 
-      {/* Para produzir agora + Ideias paradas */}
+      {/* Action Queue + Stalled Ideas */}
       {ideas.length ? (
         <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
-          <DashboardPanel title="Para produzir agora" description="Prontas para produzir e prioridade alta — favoritas primeiro.">
-            {executionIdeas.length ? (
+          <DashboardPanel
+            title="Para produzir agora"
+            description="Favoritas, prioridade alta, score 19+ ou com próxima ação definida."
+          >
+            {actionQueue.length ? (
               <div className="grid gap-3">
-                {executionIdeas.map((idea) => (
-                  <ExecutionItem key={idea.id} idea={idea} onOpen={onOpen} onCopy={onCopy} />
+                {actionQueue.map((idea) => (
+                  <ActionQueueItem
+                    key={idea.id}
+                    idea={idea}
+                    onOpen={onOpen}
+                    onCopy={onCopy}
+                    onProduce={onProduce}
+                  />
                 ))}
               </div>
             ) : (
               <EmptyState
                 icon={Flame}
-                title="Nada urgente na mesa"
-                description="Marque uma ideia como pronta para produzir ou defina prioridade alta para ela aparecer aqui."
+                title="Nada urgente na mesa."
+                description="Marque uma ideia como pronta, favorita ou adicione uma próxima ação para ela aparecer aqui."
               />
             )}
           </DashboardPanel>
 
-          <DashboardPanel title="Ideias paradas" description="Rascunhos e ideias sem atualização há mais de 7 dias.">
+          <DashboardPanel title="Ideias paradas" description="Sem atualização há 7+ dias — revisite antes que percam contexto.">
             {staleIdeas.length ? (
               <div className="grid gap-3">
                 {staleIdeas.slice(0, 4).map((idea) => (
-                  <StaleItem key={idea.id} idea={idea} onOpen={onOpen} onMoveReady={onMoveReady} />
+                  <StaleItem
+                    key={idea.id}
+                    idea={idea}
+                    reason={getStalledReason(idea)}
+                    onOpen={onOpen}
+                    onArchive={onArchive}
+                  />
                 ))}
+                {staleIdeas.length > 4 && (
+                  <p className="text-xs text-slate-500 text-center">
+                    +{staleIdeas.length - 4} mais na Biblioteca
+                  </p>
+                )}
               </div>
             ) : (
               <EmptyState
                 icon={CheckCircle2}
-                title="Seu backlog recente está limpo"
-                description="Continue revisando ideias antes que percam contexto."
+                title="Nenhuma ideia encalhada."
+                description="Seu backlog recente está saudável."
               />
             )}
           </DashboardPanel>
@@ -528,27 +584,60 @@ function DashboardPanel({ title, description, children }: { title: string; descr
   );
 }
 
-function ExecutionItem({ idea, onOpen, onCopy }: { idea: Idea; onOpen: (id: string) => void; onCopy: (idea: Idea) => void }) {
+function ActionQueueItem({
+  idea,
+  onOpen,
+  onCopy,
+  onProduce,
+}: {
+  idea: Idea;
+  onOpen: (id: string) => void;
+  onCopy: (idea: Idea) => void;
+  onProduce: (idea: Idea) => void;
+}) {
+  const score = calculatePotentialScore(idea);
+
   return (
     <article className="rounded-lg border border-line bg-slate-950/55 p-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="mb-2 flex min-w-0 items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="line-clamp-2 font-semibold text-white">{idea.title || 'Sem título'}</h3>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Badge tone="channel">{idea.channel}</Badge>
-            <Badge tone="type">{idea.type}</Badge>
-            <Badge tone={priorityTone(idea.priority)}>{idea.priority}</Badge>
-            <PotentialScore idea={idea} compact />
-          </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex">
-          <button type="button" className="btn btn-secondary px-2.5" onClick={() => onOpen(idea.id)}>
-            <ArrowRight size={16} /> Abrir
-          </button>
-          <button type="button" className="btn btn-primary px-2.5" onClick={() => onCopy(idea)}>
-            <Copy size={16} /> Copiar
-          </button>
-        </div>
+        {idea.favorite && <Star size={14} className="shrink-0 fill-amber-400 text-amber-400 mt-0.5" />}
+      </div>
+
+      <div className="mb-2 flex flex-wrap items-center gap-1.5">
+        <Badge tone={ideaTypeTone(idea.ideaType ?? 'Outro')}>{idea.ideaType ?? 'Outro'}</Badge>
+        <Badge tone={statusTone(idea.status)}>{idea.status}</Badge>
+        <Badge tone={priorityTone(idea.priority)}>{idea.priority}</Badge>
+        <PotentialScore idea={idea} compact />
+        {score >= 19 && (
+          <span className="text-xs font-semibold text-ember">{score}/25</span>
+        )}
+      </div>
+
+      {idea.nextAction && (
+        <p className="mb-2 truncate text-xs text-slate-400">
+          <span className="font-medium text-slate-300">Próxima:</span> {idea.nextAction}
+        </p>
+      )}
+
+      {idea.updatedAt && (
+        <p className="mb-2 text-xs text-slate-500 flex items-center gap-1">
+          <Clock3 size={11} /> {formatDate(idea.updatedAt)}
+        </p>
+      )}
+
+      <div className="flex flex-wrap gap-2 pt-1">
+        <button type="button" className="btn btn-ghost px-2.5 text-xs" onClick={() => onOpen(idea.id)}>
+          <ArrowRight size={14} /> Abrir
+        </button>
+        <button type="button" className="btn btn-secondary px-2.5 text-xs" onClick={() => onCopy(idea)}>
+          <Copy size={14} /> Copiar briefing
+        </button>
+        <button type="button" className="btn btn-primary px-2.5 text-xs" onClick={() => onProduce(idea)}>
+          <Play size={14} /> Produzir agora
+        </button>
       </div>
     </article>
   );
@@ -582,25 +671,38 @@ function TopPotentialItem({ idea, onOpen, onCopy }: { idea: Idea; onOpen: (id: s
   );
 }
 
-function StaleItem({ idea, onOpen, onMoveReady }: { idea: Idea; onOpen: (id: string) => void; onMoveReady: (id: string) => void }) {
+function StaleItem({
+  idea,
+  reason,
+  onOpen,
+  onArchive,
+}: {
+  idea: Idea;
+  reason: StalledReason;
+  onOpen: (id: string) => void;
+  onArchive: (id: string) => void;
+}) {
   return (
     <article className="rounded-lg border border-line bg-slate-950/55 p-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h3 className="line-clamp-2 font-semibold text-white">{idea.title || 'Sem título'}</h3>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
             <Badge tone={statusTone(idea.status)}>{idea.status}</Badge>
-            <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-              <Clock3 size={14} /> {formatDate(idea.updatedAt)}
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">
+              <AlertCircle size={11} /> {reason}
             </span>
           </div>
+          <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+            <Clock3 size={11} /> {formatDate(idea.updatedAt ?? idea.createdAt)}
+          </p>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex">
-          <button type="button" className="btn btn-secondary px-2.5" onClick={() => onOpen(idea.id)}>
-            <ArrowRight size={16} /> Abrir
+        <div className="flex shrink-0 gap-2">
+          <button type="button" className="btn btn-secondary px-2.5 text-xs" onClick={() => onOpen(idea.id)}>
+            <ArrowRight size={14} /> Abrir
           </button>
-          <button type="button" className="btn btn-primary px-2.5" onClick={() => onMoveReady(idea.id)}>
-            <CheckCircle2 size={16} /> Mover
+          <button type="button" className="btn btn-ghost px-2.5 text-xs text-slate-500" onClick={() => onArchive(idea.id)}>
+            <Archive size={13} /> Arquivar
           </button>
         </div>
       </div>

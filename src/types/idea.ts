@@ -48,6 +48,7 @@ export type Idea = PotentialCriteria & {
   effort?: Effort;
   dueDate?: string;
   checklist?: string;
+  briefingTemplate?: string;
 };
 
 export type IdeaInput = Omit<Idea, 'id' | 'createdAt' | 'updatedAt'>;
